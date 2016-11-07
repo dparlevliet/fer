@@ -28,3 +28,5 @@ node_modules
 .c9/*
 baseimage-docker-master/*
 insecure_key
+tmp/*
+usr/*
