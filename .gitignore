@@ -26,8 +26,5 @@ build/Release
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
 node_modules
 .c9/*
-baseimage-docker-master
-insecure_key
-tmp/*
-insecure_key
 baseimage-docker-master/*
+insecure_key
