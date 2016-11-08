@@ -103,7 +103,7 @@ module.exports = (function() {
                             details.install_destination = install.destination;
                             details.destination_path = '{1}/{2}'.format(
                               install.destination,
-                              details.path
+                              details.path.replace(folder, '')
                             );
                             details.source_folder = folder;
                             details.destination_folder = fer.path.dirname(details.destination_path);
@@ -162,7 +162,7 @@ module.exports = (function() {
                       console.error(err);
                       deferred.resolve();
                     } else {
-                      fer.log(5, 'Downloading: {1}'.format(details.destination_path), 3);
+                      fer.log(5, 'Downloading: {1}'.format(details.path), 3);
                       fer.server(
                         '/get-file/?file={1}'.format(
                           details.path
