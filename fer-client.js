@@ -8,6 +8,8 @@ var config = require('./bin/conf/client-config.js');
 var FileUtils = require('./bin/cortex/file_utils.js');
 var log = require('./bin/cortex/log.js');
 var fs = require('fs');
+var mkdirp = require('mkdirp');
+var path = require('path');
 
 
 fer.do(function(deferred) {
@@ -38,24 +40,32 @@ fer.do(function(deferred) {
 
     fer.reduce(lfiles, function(file, offset, deferred) {
       var install_file = function(fpath, file) {
-        log('Installing file: ' + fer_server + '/get-file/?file='+file.path.replace(__dirname, ''));
+        var rPath = file.path.replace(__dirname, '');
+        //log('Asking for: ' + fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath);
         requestify.get(
-          fer_server + '/get-file/?file='+file.path
+          fer_server + '/get-file/?nonRelative=true&file='+rPath
         ).then(function(response) {
           response.getBody();
           if (response.code == 200) {
-            fs.writeFileSync(fpath, response.body);
+            //log('  Installing file: ' + fpath);
+            mkdirp(fer.path.dirname(fpath), function(err) {
+              if (err) {
+                return console.log(err);
+              }
+              fs.writeFileSync(fpath, response.body);
+            });
           }
-          deferred.resolve();
+          return deferred.resolve();
+        }).fail(function(e) {
+          console.log(e);
+          return deferred.resolve();
         });
-        return deferred.resolve();
       };
 
       if (file.type) {
-        if (file.type == 'directory') {
+        if (file.type == 'directory' || file.path.indexOf('node_modules') > -1 || file.path.indexOf('bin/conf') > -1) {
           deferred.resolve();
         } else {
-          var fpath = (file.path).replace(/\.\.\//, '');
           var md5 = '';
           var sha1 = '';
           try {
@@ -66,7 +76,7 @@ fer.do(function(deferred) {
               }).then(function(sum) {
                 sha1 = sum;
                 if (file.md5 != md5 || file.sha1 != sha1) {
-                  log("  SHA or MD5 doesn't match.");
+                  //log("  SHA or MD5 doesn't match.");
                   install_file(file.path, file);
                 } else {
                   deferred.resolve();

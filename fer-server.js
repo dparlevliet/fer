@@ -12,6 +12,7 @@ global.config       = require('./bin/conf/server-config.js');
 /* global __basedir */
 global.__basedir    = __dirname;
 
+
 /**
  * Returns information about the most current client on the master server. The
  * client server will call this url before doing anything, and if the version
@@ -22,7 +23,8 @@ app.get('/client-files/', function (req, res) {
   FileUtils.walkSumList([
     __basedir+'/bin',
     __basedir+'/usr',
-    __basedir+'/node_modules',
+    __basedir+'/fer-client.js',
+    __basedir+'/package.json',
   ]).then(function(list) {
     res.send(JSON.stringify(list));
   });
@@ -30,15 +32,24 @@ app.get('/client-files/', function (req, res) {
 
 
 app.get('/get-file/', function (req, res) {
-  var file = __dirname + '/usr/files/' + req.query.file.replace(/[\.]+\//g, '');
+  var file;
+  if (req.query.nonRelative == 'true') {
+    file = __dirname + '/' + req.query.file.replace(/[\.]+\//g, '');
+  } else {
+    file = __dirname + '/usr/files/' + req.query.file.replace(/[\.]+\//g, '');
+  }
+  file = file.replace('//', '/');
   try {
+    if (!FileUtils.stat(file)) {
+      return res.status(422).send('File doesnt exist');
+    }
     if (FileUtils.stat(file).isDirectory()) {
-      res.status(404).send('Not found');
+      res.status(422).send('File is a directory');
     } else {
-      res.sendfile(file);
+      res.sendfile(file, {dotfiles: 'allow'});
     }
   } catch (e) {
-    res.status(404).send('Not found');
+    res.status(422).send('File doesnt exist');
   }
 });
 
