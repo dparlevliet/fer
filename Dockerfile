@@ -13,7 +13,8 @@ RUN rm -f /etc/service/sshd/down
 
 # ...put your own build instructions here...
 RUN apt-get update && apt-get upgrade -y --force-yes
-RUN curl -sL https://deb.nodesource.com/setup_5.x | sudo -E bash -
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes build-essential python2.7
+RUN curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
 RUN apt-get install -y --force-yes nodejs
 
 # Clean up APT when done.

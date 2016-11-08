@@ -30,3 +30,4 @@ baseimage-docker-master/*
 insecure_key
 tmp/*
 usr/*
+bin/conf/*

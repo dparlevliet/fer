@@ -12,7 +12,7 @@ module.exports = {
           var source = 'usr/files/' + req.query.source.replace(/[\.]+\//g, '');
           try {
             if (global.FileUtils.stat(source).isDirectory()) {
-              return res.status(404).send('Cannot check directory');
+              return res.status(404).send('Not found');
             }
             var md5 = '';
             var sha1 = '';

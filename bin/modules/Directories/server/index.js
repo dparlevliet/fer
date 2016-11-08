@@ -10,15 +10,15 @@ module.exports = {
           if (!req.query.source) {
             return res.status(404).send('Not found');
           }
-          var source = '/usr/files/' + req.query.source.replace(/[\.]+\//g, '');
+          var source = global.__basedir + '/usr/files/' + req.query.source.replace(/[\.]+\//g, '');
           try {
             if (global.FileUtils.stat(source).isDirectory()) {
               global.FileUtils.walkSumList([
-                __basedir + source
+                source
               ]).then(function(list) {
                 var fileList = list[0];
                 fileList.forEach(function(file, index) {
-                  fileList[index].path = file.path.replace(/^usr\/files\/(.*)/g, '$1');
+                  fileList[index].path = ((file.path.replace(global.__basedir, '')).replace('/usr/files', '')).replace('//', '/');
                 });
                 res.send(JSON.stringify(fileList));
               });
