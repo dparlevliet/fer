@@ -53,9 +53,11 @@ fer.do(function(deferred) {
                 return console.log(err);
               }
               fs.writeFileSync(fpath, response.body);
+              deferred.resolve();
             });
+          } else {
+            return deferred.resolve();
           }
-          return deferred.resolve();
         }).fail(function(e) {
           console.log(e);
           return deferred.resolve();
@@ -63,7 +65,11 @@ fer.do(function(deferred) {
       };
 
       if (file.type) {
-        if (file.type == 'directory' || file.path.indexOf('node_modules') > -1 || file.path.indexOf('bin/conf') > -1) {
+        if (
+          file.type == 'directory' ||
+          file.path.indexOf('node_modules') > -1 ||
+          file.path.indexOf('bin/conf') > -1
+        ) {
           deferred.resolve();
         } else {
           var md5 = '';
@@ -95,6 +101,9 @@ fer.do(function(deferred) {
     }).then(function() {
       deferred.resolve();
     });
+  }).fail(function(e) {
+    console.log(e);
+    deferred.resolve();
   });
 }).then(function(){
   log("Fer: OK. I'm starting now ...");

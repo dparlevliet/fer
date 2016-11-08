@@ -262,12 +262,10 @@ global.fer = (function() {
 
         // load
         self.load = function() {
-          parent.log(5, 'Fer: Loaded memory');
           memory_store = JSON.parse(parent.fs.readFileSync(memory_path));
         };
 
         self.save = function() {
-          parent.log(5, 'Fer: Saved memory');
           parent.fs.writeFileSync(memory_path, JSON.stringify(memory_store, null, 2));
         };
 
@@ -358,7 +356,7 @@ global.fer = (function() {
           }
 
           if (run_as) {
-            command = ['su {1}'.format(run_as)].concat(command);
+            //command = ['su {1}'.format(run_as), 'cd ~'].concat(command);
           }
 
           if (!silent) {
@@ -374,7 +372,12 @@ global.fer = (function() {
             '#/bin/bash',
             command
           ].join("\n"));
-          var child = parent.child_process.spawn('bash', [tempBashFile]);
+          var child;
+          if (run_as) {
+            child = parent.child_process.spawn('sudo', ['-i', '-u', run_as, 'bash', tempBashFile]);
+          } else {
+            child = parent.child_process.spawn('bash', [tempBashFile]);
+          }
           var log = '';
 
           // Parse the process stream data and reformat it for display
