@@ -7,6 +7,7 @@ var requestify = require('requestify');
 var config = require('./bin/conf/client-config.js');
 var FileUtils = require('./bin/cortex/file_utils.js');
 var log = require('./bin/cortex/log.js');
+var fs = require('fs');
 
 
 fer.do(function(deferred) {
@@ -38,7 +39,6 @@ fer.do(function(deferred) {
     fer.reduce(lfiles, function(file, offset, deferred) {
       var install_file = function(fpath, file) {
         log('Installing file: ' + fer_server + '/get-file/?file='+file.path.replace(__dirname, ''));
-        /*
         requestify.get(
           fer_server + '/get-file/?file='+file.path
         ).then(function(response) {
@@ -48,7 +48,6 @@ fer.do(function(deferred) {
           }
           deferred.resolve();
         });
-        */
         return deferred.resolve();
       };
 
