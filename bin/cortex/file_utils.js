@@ -66,6 +66,12 @@ module.exports = (function() {
       return parent.sumFile(path, 'sha1');
     };
 
+    this.walk = function(path) {
+      return fer.do(function(deferred) {
+        deferred.resolve(walkSync(path));
+      });
+    };
+
     this.fileSHA1AndMD5 = function(path) {
       return defer(function(deferred) {
         var md5 = '';

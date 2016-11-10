@@ -15,7 +15,6 @@ fer.on('ready', function() {
     '{1}/../usr/devices/'.format(__dirname)
   ]).then(function(devices) {
     fer.reduce(devices[0], function(deviceFile, offset, deferred) {
-      console.log(deviceFile.path);
       if (deviceFile.path.indexOf('.gitkeep') > -1) {
         return deferred.resolve(); // skip the .gitkeep file
       }
