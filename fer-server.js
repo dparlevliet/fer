@@ -26,7 +26,28 @@ app.get('/client-files/', function (req, res) {
     __basedir+'/fer-client.js',
     __basedir+'/package.json',
   ]).then(function(list) {
-    res.send(JSON.stringify(list));
+    var lfiles = [];
+
+    list.forEach(function(files) {
+      if (!files.forEach) {
+        files = [files];
+      }
+      files.forEach(function(file) {
+        if (
+          file.path.indexOf('node_modules') > -1 ||
+          file.path.indexOf('bin/conf') > -1 ||
+          file.path.indexOf('usr/files') > -1
+        ) {
+          return true;
+        } else {
+          lfiles.push(file);
+        }
+      });
+    });
+    res.send(JSON.stringify(lfiles));
+  }).fail(function(e) {
+    console.log(e);
+    res.status(400).send('Error');
   });
 });
 

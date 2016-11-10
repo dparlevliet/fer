@@ -25,15 +25,7 @@ fer.do(function(deferred) {
     fer_server + '/client-files/'
   ).then(function(response) {
     response.getBody();
-    var files = JSON.parse(response.body);
-
-    var lfiles = [];
-    files.forEach(function(file) {
-      if (file.forEach) {
-        lfiles = lfiles.concat(file);
-      }
-    });
-
+    var lfiles = JSON.parse(response.body);
     if (lfiles.length == 0) {
       return deferred.resolve();
     }
