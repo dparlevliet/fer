@@ -41,13 +41,12 @@ fer.do(function(deferred) {
     fer.reduce(lfiles, function(file, offset, deferred) {
       var install_file = function(fpath, file) {
         var rPath = file.path.replace(__dirname, '');
-        //log('Asking for: ' + fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath);
+        var url = fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath;
         requestify.get(
-          fer_server + '/get-file/?nonRelative=true&file='+rPath
+          url
         ).then(function(response) {
           response.getBody();
           if (response.code == 200) {
-            //log('  Installing file: ' + fpath);
             mkdirp(fer.path.dirname(fpath), function(err) {
               if (err) {
                 return console.log(err);
@@ -59,6 +58,7 @@ fer.do(function(deferred) {
             return deferred.resolve();
           }
         }).fail(function(e) {
+          log('Error asking for: ' + url);
           console.log(e);
           return deferred.resolve();
         });
@@ -68,7 +68,8 @@ fer.do(function(deferred) {
         if (
           file.type == 'directory' ||
           file.path.indexOf('node_modules') > -1 ||
-          file.path.indexOf('bin/conf') > -1
+          file.path.indexOf('bin/conf') > -1 ||
+          file.path.indexOf('usr/files') > -1
         ) {
           deferred.resolve();
         } else {
