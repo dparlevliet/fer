@@ -284,13 +284,38 @@ global.fer = (function() {
       return new Memory();
     }());
 
+    /**
+     * Wrapper for the ``command`` entry in module config. It allows modules to
+     * remain DRY.
+     *
+     * @param value <string/function> the shell command to run
+     *
+     * @example
+     *  fer.runModuleCommand(config.command).then(function() {
+     *    deferred.resolve();
+     *  });
+     */
+    parent.runModuleCommand = function(value) {
+      return parent.do(function(deferred) {
+        if (typeof(value) === 'function') {
+          parent.value(value).then(function() {
+            deferred.resolve();
+          });
+        } else {
+          parent.command(value).then(function() {
+            deferred.resolve();
+          });
+        }
+      });
+    };
+
     /***************************************************************************
      * A dictionary list of all modules available for use.
      *
      * For instance, the module "PackageManagers" would make available `apt` and
      * `yum`.
      *
-     * Example:
+     * @example
      *   fer.modules.apt({ packages: ['htop'] })
      */
     parent.modules = (function() {

@@ -94,8 +94,8 @@ var Apt = (function() {
                   "export DEBIAN_FRONTEND=noninteractive",
                   "apt-get {1} {2} {3} {4} {5} {6} {7}".format(
                     "-q",
-                    "-oStopOnError=false",
-                    "-oDPkg::Options=\"--force-confold\"",
+                    "-o StopOnError=false",
+                    "-o DPkg::Options=\"--force-confold\"",
                     "--force-yes -y",
                     "--allow-unauthenticated",
                     "install",

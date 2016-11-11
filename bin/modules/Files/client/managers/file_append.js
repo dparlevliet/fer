@@ -57,13 +57,8 @@ var FileAppend = (function() {
                 }
                 fer.fs.writeFileSync(filePath, newLines.join("\n")+"\n");
                 if (modified) {
-                  fer.value(config.command).then(function(command) {
-                    if (!command) {
-                      deferred.resolve();
-                    }
-                    fer.command(command, false).then(function() {
-                      deferred.resolve();
-                    });
+                  fer.runModuleCommand(config.command).then(function() {
+                    deferred.resolve();
                   });
                 } else {
                   deferred.resolve();

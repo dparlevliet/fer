@@ -53,7 +53,7 @@ module.exports = (function() {
             true
           );
         }).then(function() {
-          fer.value(path_config.config.command).then(function() {
+          fer.runModuleCommand(path_config.config.command).then(function() {
             deferred.resolve();
           });
         });

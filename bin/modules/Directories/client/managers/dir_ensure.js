@@ -5,7 +5,7 @@ var mkdirp = require('mkdirp');
 module.exports = (function() {
   /**
    *
-   * Example: 
+   * Example:
       dir_ensure: {
         '/tmp/test': {
           dir_mode: '0750',
@@ -59,7 +59,7 @@ module.exports = (function() {
                         true
                       );
                     }).then(function() {
-                      fer.value(config.command).then(function() {
+                      fer.runModuleCommand(config.command).then(function() {
                         d1.resolve();
                       });
                     });

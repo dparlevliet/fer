@@ -44,7 +44,7 @@ module.exports = (function() {
             ];
           }
           fer.command(commands, false, config.run_as).then(function() {
-            fer.value(config.command).then(function() {
+            fer.runModuleCommand(config.command).then(function() {
               deferred.resolve();
             });
           });

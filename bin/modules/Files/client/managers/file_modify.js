@@ -43,13 +43,8 @@ var FileModify = (function() {
                 if (modified) {
                   fer.log(0, 'Modifying file {1}'.format(filePath), 1);
                   fer.fs.writeFileSync(filePath, newLines.join("\n")+"\n");
-                  fer.value(config.command).then(function(command) {
-                    if (!command) {
-                      deferred.resolve();
-                    }
-                    fer.command(command, false).then(function() {
-                      deferred.resolve();
-                    });
+                  fer.runModuleCommand(config.command).then(function() {
+                    deferred.resolve();
                   });
                 } else {
                   deferred.resolve();
