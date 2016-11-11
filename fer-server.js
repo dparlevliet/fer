@@ -101,5 +101,5 @@ app.get('/get-file/', function (req, res) {
  * Start the server
  */
 app.listen(config.port, config.bind, function () {
-  console.log('[ '+(new Date()).toISOString()+' ] Fer: I am listening on '+config.bind+':'+config.port+'!');
+  console.log('[ '+(new Date()).toISOString()+' ] Fer Server: I am listening on '+config.bind+':'+config.port+'!');
 });

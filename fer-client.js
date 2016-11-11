@@ -156,7 +156,7 @@ fer.do(function(deferred) {
 
     var kill = function() {
       if (argv.standalone) {
-        log('Fer: No longer listening');
+        log('Fer Server: No longer listening');
       }
       if (client) {
         client.kill();
