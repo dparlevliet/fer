@@ -1,4 +1,7 @@
+var argv = require('yargs').argv;
+
 global.__basedir = __dirname;
+
 require('./bin/cortex/global_fer.js');
 /* global fer */
 
@@ -9,10 +12,14 @@ var FileUtils = require('./bin/cortex/file_utils.js');
 var log = require('./bin/cortex/log.js');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
-var path = require('path');
+
+var newPackages = false;
 
 
 fer.do(function(deferred) {
+  if (argv.skipSync || argv.standalone) {
+    return deferred.resolve();
+  }
   log("Fer: I need to sync first ...");
   var fer_server = 'http' +
     ((config.source_ssl)?'s':'') + '://' +
@@ -32,27 +39,29 @@ fer.do(function(deferred) {
 
     fer.reduce(lfiles, function(file, offset, deferred) {
       var install_file = function(fpath, file) {
-        var rPath = file.path.replace(__dirname, '');
-        var url = fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath;
-        requestify.get(
-          url
-        ).then(function(response) {
-          response.getBody();
-          if (response.code == 200) {
-            mkdirp(fer.path.dirname(fpath), function(err) {
-              if (err) {
-                return console.log(err);
-              }
-              fs.writeFileSync(fpath, response.body);
-              deferred.resolve();
-            });
-          } else {
+        return fer.do(function(deferred) {
+          var rPath = file.path.replace(__dirname, '');
+          var url = fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath;
+          requestify.get(
+            url
+          ).then(function(response) {
+            response.getBody();
+            if (response.code == 200) {
+              mkdirp(fer.path.dirname(fpath), function(err) {
+                if (err) {
+                  return console.log(err);
+                }
+                fs.writeFileSync(fpath, response.body);
+                deferred.resolve();
+              });
+            } else {
+              return deferred.resolve();
+            }
+          }).fail(function(e) {
+            log('Error asking for: ' + url);
+            console.log(e);
             return deferred.resolve();
-          }
-        }).fail(function(e) {
-          log('Error asking for: ' + url);
-          console.log(e);
-          return deferred.resolve();
+          });
         });
       };
 
@@ -76,7 +85,12 @@ fer.do(function(deferred) {
                 sha1 = sum;
                 if (file.md5 != md5 || file.sha1 != sha1) {
                   //log("  SHA or MD5 doesn't match.");
-                  install_file(file.path, file);
+                  install_file(file.path, file).then(function() {
+                    if (file.path.indexOf('package.json') > -1) {
+                      newPackages = true;
+                    }
+                    deferred.resolve();
+                  });
                 } else {
                   deferred.resolve();
                 }
@@ -98,13 +112,67 @@ fer.do(function(deferred) {
     console.log(e);
     deferred.resolve();
   });
-}).then(function(){
-  log("Fer: OK. I'm starting now ...");
-  var cp = require('child_process');
-  var client = cp.fork('./bin/client.js');
-
-  process.on('SIGINT', function () {
-    client.kill();
-    process.exit();
+}).then(function() {
+  return fer.do(function(deferred) {
+    if (newPackages) {
+      log('Fer: Installing new npm packages');
+      var cp = require('child_process');
+      var npm = cp.spawn('/usr/bin/npm', ['--prefix', __dirname, 'install', __dirname ]);
+      npm.stdout.on('data', function(data) {
+        console.log(data.toString().trim());
+      });
+      npm.on('exit', function(code){
+        deferred.resolve();
+      });
+    } else {
+      deferred.resolve();
+    }
   });
+}).then(function() {
+  var cp = require('child_process');
+  var client;
+  var server;
+
+  if (argv.start) {
+    log("Fer: OK. I'm starting now ...");
+    client = cp.fork('./bin/client.js');
+
+    process.on('SIGINT', function () {
+      client.kill();
+      process.exit();
+    });
+  } else {
+    if (argv.standalone) {
+      log('Fer: Launching in to standalone mode');
+      server = cp.spawn('/usr/bin/node', [__dirname+'/fer-server.js']);
+      server.stdout.on('data', function(data) {
+        console.log(data.toString().trim());
+      });
+    }
+    client = cp.spawn('/usr/bin/node', [__dirname+'/fer-client.js', '--skip-sync','--start']);
+    client.stdout.on('data', function(data) {
+      console.log(data.toString().trim());
+    });
+
+    var kill = function() {
+      if (argv.standalone) {
+        log('Fer: No longer listening');
+      }
+      if (client) {
+        client.kill();
+      }
+      if (server) {
+        server.kill();
+      }
+      process.exit();
+    };
+
+    client.on('exit', function(code){
+      kill();
+    });
+
+    process.on('SIGINT', function () {
+      kill();
+    });
+  }
 });

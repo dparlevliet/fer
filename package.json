@@ -54,13 +54,22 @@
     "unpipe": "^1.0.0",
     "utils-merge": "^1.0.0",
     "vary": "^1.1.0",
-    "walk-sync": "^0.3.1"
+    "walk-sync": "^0.3.1",
+    "yargs": "^6.3.0"
   },
-  "license": "GNUv3",
+  "license": "GPLv3",
   "maintainers": [],
   "name": "accepts",
   "optionalDependencies": {},
   "readme": "ERROR: No README data found!",
-  "scripts": {},
-  "version": "0.0.1"
+  "scripts": {
+    "generate-docs": "node_modules/.bin/jsdoc --configure .jsdoc.json --verbose"
+  },
+  "version": "0.0.1",
+  "devDependencies": {
+    "jsdoc": "^3.4.3",
+    "minami": "^1.1.1"
+  }
 }
+
+

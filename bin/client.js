@@ -195,6 +195,7 @@ function processDevice(device) {
                 });
               } else {
                 console.warn('!WARNING! Module for ' + module_name + ' not found.');
+                _deferred.resolve();
               }
             }).then(function() {
               deferred.resolve();
