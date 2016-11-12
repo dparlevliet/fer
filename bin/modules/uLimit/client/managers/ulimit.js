@@ -65,7 +65,8 @@ module.exports = (function() {
     if (!fer.$$ulimit) {
       fer.$$ulimit = {};
       fer.on('beforeDone', function() {
-        fer.log(5, 'ulimit> Writing ulimits');
+        var start = (new Date()).getTime();
+        fer.log(0, 'beforeDone-ulimit> Starting', 0);
         return fer.do(function(deferred) {
           fer.reduce(Object.keys(fer.$$ulimit), function(domainName, offset, deferred) {
             var lines = [
@@ -95,6 +96,8 @@ module.exports = (function() {
               });
             });
           }).then(function() {
+            var ms = (new Date()).getTime() - start;
+            fer.log(0, 'beforeDone-supervisord> Completed in {1}ms'.format(ms), 0);
             deferred.resolve();
           });
         }).fail(function(e) {

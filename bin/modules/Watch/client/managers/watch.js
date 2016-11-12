@@ -25,6 +25,8 @@ module.exports = (function() {
       fer.FileUtils.walkSumList([ path ]).then(function(originalList) {
         fer.log(0, 'Watching {1}'.format(path), 1);
         fer.on('beforeDone', function() {
+          var start = (new Date()).getTime();
+          fer.log(0, 'beforeDone-watch> Starting', 0);
           return fer.do(function(deferred) {
             fer.FileUtils.walkSumList([ path ]).then(function(newList) {
               var changed = [];
@@ -56,9 +58,11 @@ module.exports = (function() {
               console.log(e);
               deferred.resolve();
             });
+          }).then(function() {
+            var ms = (new Date()).getTime() - start;
+            fer.log(0, 'beforeDone-watch> Completed in {1}ms'.format(ms), 0);
           });
         });
-        deferred.resolve();
       }).fail(function(e) {
         console.log(e);
         deferred.resolve();

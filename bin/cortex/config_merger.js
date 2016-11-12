@@ -17,8 +17,8 @@ module.exports = function(fer) {
         return deferred.resolve(config_left);
       }
 
-      fer.value(config_left).then(function(i_config_left) {
-        fer.value(config_right).then(function(i_config_right) {
+      fer.value(config_left, ['command']).then(function(i_config_left) {
+        fer.value(config_right, ['command']).then(function(i_config_right) {
           var keys = Object.keys(i_config_right);
           keys.forEach(function(key, offset) {
             var try_resolve = function() {
@@ -28,12 +28,15 @@ module.exports = function(fer) {
             };
 
             // check to see if this key (on the right side) is found to the left
-            if (typeof(config_left[key]) != 'undefined') {
+            if (typeof(config_right[key]) === 'function' || typeof(config_left[key]) === 'function') {
+              config_left[key] = config_right[key];
+              try_resolve();
+            } else if (typeof(config_left[key]) !== 'undefined') {
               // conflicting keys found, we need to resolve this. Right key takes
               // priority, but we want to do a smart merge so if it's found that
               // both sides are an object then we will recursively merge them.
-              fer.value(config_left[key]).then(function(left_value) {
-                fer.value(config_right[key]).then(function(right_value) {
+              fer.value(config_left[key], ['command']).then(function(left_value) {
+                fer.value(config_right[key], ['command']).then(function(right_value) {
                   if (
                     typeof(left_value) === 'object' &&
                     typeof(right_value) == 'object'
@@ -62,7 +65,7 @@ module.exports = function(fer) {
                 });
               });
             } else {
-              fer.value(config_right[key]).then(function(value) {
+              fer.value(config_right[key], ['command']).then(function(value) {
                 config_left[key] = value;
                 try_resolve();
               });

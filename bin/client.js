@@ -1,9 +1,11 @@
+
 // inclusions
 require('./cortex/js_extensions.js');
 
 // this registers global.fer
 /* global fer */
 require('./cortex/global_fer.js');
+fer.argv = require('yargs').argv;
 
 // this registers global.components
 require('./cortex/global_components.js');
@@ -182,26 +184,42 @@ function processDevice(device) {
           return deferred.resolve();
         }
 
-        fer.reduce(device.inherit, function(component, offset, deferred) {
-          component.then(function(config) {
-            fer.reduce(Object.keys(config), function(module_name, offset, _deferred) {
-              if (fer.modules[module_name]) {
-                fer.value(config[module_name]).then(function(config) {
-                  queue.push({
-                    module_name: module_name,
-                    config: config
-                  });
-                  _deferred.resolve();
+        var runComponent = function(componentDevice) {
+          return fer.do(function(deferred) {
+            fer.reduce(componentDevice.inherit, function(component, offset, deferred) {
+              component.then(function(componentConfig) {
+                runComponent(componentConfig).then(function() {
+                  deferred.resolve();
                 });
-              } else {
-                console.warn('!WARNING! Module for ' + module_name + ' not found.');
-                _deferred.resolve();
-              }
+              });
             }).then(function() {
-              deferred.resolve();
+              if (device.single_config) {
+                fer.config_merge_left(device.config, componentDevice.config).then(function(config) {
+                  device.config = config;
+                });
+                return deferred.resolve();
+              }
+
+              fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
+                if (fer.modules[module_name]) {
+                  fer.value(componentDevice.config[module_name]).then(function(config) {
+                    queue.push({
+                      module_name: module_name,
+                      config: config
+                    });
+                    _deferred.resolve();
+                  });
+                } else {
+                  console.warn('!WARNING! Module for ' + module_name + ' not found.');
+                  _deferred.resolve();
+                }
+              }).then(function() {
+                deferred.resolve();
+              });
             });
           });
-        }).then(function() {
+        };
+        runComponent(device).then(function() {
           deferred.resolve();
         });
       } else {
@@ -209,6 +227,11 @@ function processDevice(device) {
       }
     }).then(function() {
       return fer.do(function(deferred) {
+        if (fer.argv.viewConfig) {
+          console.log(JSON.stringify(device.config, null, 2));
+          return deferred.resolve(true);
+        }
+
         // parse the device config
         if (Object.keys(device.config).length == 0) {
           return deferred.resolve();
@@ -223,119 +246,16 @@ function processDevice(device) {
           } else {
             console.warn('!WARNING! Module for ' + module_name + ' not found.');
           }
-
           deferred.resolve();
         }).then(function() {
           deferred.resolve();
         });
       });
-    }).then(function() {
-      if (device.single_config !== true) {
-        // We don't need to process the config any futher, we can start the queue
+    }).then(function(skip) {
+      // We don't need to process the config any futher, we can start the queue
+      if (!skip) {
         runQueue(queue);
-      } else {
-        // The user has opted to use a single config structure, which means
-        // merging all inherited configs and device configs down to a single
-        // configuration struct.
-        fer.do(function(deferred) {
-          var final_config = {};
-          var waiting = [];
-          waiting.reduce(function(n1, n2, offset) {
-            if (queue.length - 1 == offset) {
-              deferred.resolve(final_config);
-            }
-          }, fer.Q(fer.do(function() {
-            queue.forEach(function(item, offset) {
-              waiting.push(fer.do(function(d2) {
-                var config = {};
-                if (final_config[item.module_name]) {
-                  config = final_config[item.module_name];
-                } else {
-                  final_config[item.module_name] = item.config;
-                }
-
-                // due to run_at it's possible for two configs to exist from the
-                // same module and expect to be run at different positions in the
-                // queue -- this causes an issue with a singular config sytem
-                fer.do(function(d3) {
-                  if (
-                    config.run_at &&
-                    item.config.run_at &&
-                    config.run_at != item.config.run_at
-                  ) {
-                    // found two module configs that are set to run at different
-                    // positions in the queue. We must convert this module config
-                    // to a list object to preserve integrity.
-                    final_config[item.module_name] = [
-                      config,
-                      item.config
-                    ];
-                    d3.resolve();
-                  } else if (config.forEach) {
-                    // oooh boy. We found a config entry for a module that
-                    // already has a list of configs set to run at different
-                    // times. We need to go through each of these and see if this
-                    // one is set to run at the same time as any of the others.
-                    // If not, we add it to the queue, if so then we merge them.
-                    var n_config = [];
-                    config.forEach(function(value, offset) {
-                      if (
-                        value.run_at &&
-                        item.config.run_at &&
-                        value.run_at == item.config.run_at
-                      ) {
-                        // found a config entry that matches the run period of
-                        // this one.
-                        fer.config_merge_left(
-                          value,
-                          item.config
-                        ).then(function(value) {
-                          n_config[offset] = value;
-                          d3.resolve();
-                        });
-                      } else if (!value.run_at && !item.config.run_at) {
-                        // neither of these configs are set to run at a specific
-                        // period so it will end up defaulting back to the module
-                        // specification. It's safe to merge these two
-                      } else {
-                        // this is a new period of definition, add it to the list
-                        n_config.push(value);
-                        d3.resolve();
-                      }
-                    });
-                  } else {
-                    // normal situation, just merge them then move on
-                    fer.config_merge_left(
-                      config,
-                      item.config
-                    ).then(function(n_config) {
-                      final_config[item.module_name] = n_config;
-                      d3.resolve();
-                    });
-                  }
-                }).then(function() {
-                  // this one is done, call up the next
-                  d2.resolve();
-                });
-              }));
-            });
-          })));
-        }).then(function(final_config) {
-          return fer.do(function(deferred) {
-            // reset the queue
-            queue = [];
-            for (var module_name in final_config) {
-              queue.push({
-                module_name: module_name,
-                config: final_config[module_name]
-              });
-            }
-            deferred.resolve(queue);
-          });
-        }).then(function(queue) {
-          runQueue(queue);
-        });
       }
     });
   });
-};
+}

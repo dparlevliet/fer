@@ -50,7 +50,7 @@ module.exports = (function() {
                     '',
                   ].concat(configLines).join("\n")+"\n");
                   var start = (new Date()).getTime();
-                  fer.log(0, 'beforeEnd-sudo> Starting', 0);
+                  fer.log(0, 'beforeDone-sudo> Starting', 0);
                   fer.command('visudo -c', false).then(function(response) {
                     if (response.code != 0) {
                       fer.log(0, '!WARNING! visudo reported an error in the sudoers config! Reverting back to previous version', 2);
@@ -58,7 +58,7 @@ module.exports = (function() {
                     }
                     deferred.resolve();
                     var ms = (new Date()).getTime() - start;
-                    fer.log(0, 'beforeEnd-sudo> Completed in {1}'.format(ms), 0);
+                    fer.log(0, 'beforeDone-sudo> Completed in {1}ms'.format(ms), 0);
                   });
                 });
               }).fail(function(e) {

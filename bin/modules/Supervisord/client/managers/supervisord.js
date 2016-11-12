@@ -27,6 +27,8 @@ module.exports = (function() {
     if (!fer.$$supervisord) {
       fer.$$supervisord = {};
       fer.on('beforeDone', function() {
+        var start = (new Date()).getTime();
+        fer.log(0, 'beforeDone-supervisord> Starting', 0);
         return fer.do(function(deferred) {
           config = fer.$$supervisord;
           // install apps
@@ -63,6 +65,8 @@ module.exports = (function() {
               'supervisorctl reread',
               'supervisorctl update'
             ], true).then(function() {
+              var ms = (new Date()).getTime() - start;
+              fer.log(0, 'beforeDone-supervisord> Completed in {1}ms'.format(ms), 0);
               deferred.resolve();
             });
           });

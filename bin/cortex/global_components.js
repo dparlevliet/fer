@@ -16,10 +16,10 @@ global.components = (function() {
           var name = prefix + components.name;
           if (components && components.forEach) {
             components.forEach(function(component) {
-              self[name] = new Component(component.config);
+              self[name] = new Component(component);
             });
           } else {
-            self[name] = new Component(components.config);
+            self[name] = new Component(components);
           }
         }
       });

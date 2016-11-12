@@ -18,6 +18,8 @@ var Crontab = (function() {
       fer.$$crontab = {};
       fer.on('beforeDone', function() {
         return fer.do(function(deferred) {
+          var start = (new Date()).getTime();
+          fer.log(0, 'beforeDone-crontab> Starting', 0);
           fer.reduce(Object.keys(fer.$$crontab), function(fileName, offset, deferred) {
             fer.value(fer.$$crontab[fileName]).then(function(entries) {
               var filePath = '/etc/cron.d/{1}'.format(fileName);
@@ -43,6 +45,8 @@ var Crontab = (function() {
               deferred.resolve();
             });
           }).then(function() {
+            var ms = (new Date()).getTime() - start;
+            fer.log(0, 'beforeDone-crontab> Completed in {1}ms'.format(ms), 0);
             deferred.resolve();
           });
         });

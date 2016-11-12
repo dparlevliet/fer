@@ -3,15 +3,17 @@
 /**
  * Handles the configuration of a Fer component.
  */
-var Component = function(config) {
+var Component = function(component) {
   var parent = this;
 
-  parent.config = config || {};
+  parent.name =  component.name;
+  parent.inherit = component.inherit || [];
+  parent.config = component.config || {};
 
   function Component(config) {
     return fer.do(function(deferred) {
       fer.config_merge_left(parent.config, config).then(function(config) {
-        deferred.resolve(config);
+        deferred.resolve(parent);
       });
     });
   }

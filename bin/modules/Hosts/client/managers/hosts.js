@@ -16,6 +16,8 @@ module.exports = (function() {
     if (!fer.$$host) {
       fer.$$host = {};
       fer.on('beforeDone', function() {
+        var start = (new Date()).getTime();
+        fer.log(0, 'beforeDone-hosts> Starting', 0);
         return fer.do(function(deferred) {
           var unique_map = {};
           config = fer.$$host;
@@ -65,15 +67,21 @@ module.exports = (function() {
               });
             });
           }).then(function(lines) {
-            fer.reduce(Object.keys(config), function(ip, index, deferred) {
-              if (config[ip] !== null && config[ip].length > 0) {
-                lines.push('{1} {2}'.format(ip, config[ip].join(' ')));
-              }
-              deferred.resolve();
-            }).then(function() {
-              fer.fs.writeFileSync('/etc/hosts', lines.join("\n")+"\n");
-              deferred.resolve();
+            return fer.do(function(deferred) {
+              fer.reduce(Object.keys(config), function(ip, index, deferred) {
+                if (config[ip] !== null && config[ip].length > 0) {
+                  lines.push('{1} {2}'.format(ip, config[ip].join(' ')));
+                }
+                deferred.resolve();
+              }).then(function() {
+                fer.fs.writeFileSync('/etc/hosts', lines.join("\n")+"\n");
+                deferred.resolve();
+              });
             });
+          }).then(function() {
+            var ms = (new Date()).getTime() - start;
+            fer.log(0, 'beforeDone-hosts> Completed in {1}ms'.format(ms), 0);
+            deferred.resolve();
           });
         });
       });

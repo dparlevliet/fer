@@ -1,5 +1,3 @@
-var argv = require('yargs').argv;
-
 global.__basedir = __dirname;
 
 require('./bin/cortex/global_fer.js');
@@ -12,12 +10,12 @@ var FileUtils = require('./bin/cortex/file_utils.js');
 var log = require('./bin/cortex/log.js');
 var fs = require('fs');
 var mkdirp = require('mkdirp');
-
+fer.argv = require('yargs').argv;
 var newPackages = false;
 
 
 fer.do(function(deferred) {
-  if (argv.skipSync || argv.standalone) {
+  if (fer.argv.skipSync || fer.argv.standalone) {
     return deferred.resolve();
   }
   log("Fer: I need to sync first ...");
@@ -133,29 +131,28 @@ fer.do(function(deferred) {
   var client;
   var server;
 
-  if (argv.start) {
+  if (fer.argv.start) {
     log("Fer: OK. I'm starting now ...");
-    client = cp.fork('./bin/client.js');
+    client = cp.fork('./bin/client.js', process.argv.slice(2));
 
     process.on('SIGINT', function () {
-      client.kill();
       process.exit();
     });
   } else {
-    if (argv.standalone) {
+    if (fer.argv.standalone) {
       log('Fer: Launching in to standalone mode');
       server = cp.spawn('/usr/bin/node', [__dirname+'/fer-server.js']);
       server.stdout.on('data', function(data) {
         console.log(data.toString().trim());
       });
     }
-    client = cp.spawn('/usr/bin/node', [__dirname+'/fer-client.js', '--skip-sync','--start']);
+    client = cp.spawn('/usr/bin/node', [__dirname+'/fer-client.js', '--skip-sync','--start'].concat(process.argv.slice(2)));
     client.stdout.on('data', function(data) {
       console.log(data.toString().trim());
     });
 
     var kill = function() {
-      if (argv.standalone) {
+      if (fer.argv.standalone) {
         log('Fer Server: No longer listening');
       }
       if (client) {
