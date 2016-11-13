@@ -49,7 +49,7 @@ module.exports = (function() {
                 '# DO NOT MANUALLY EDIT THIS FILE! #',
                 '###################################',
                 '',
-                '[program:{1}'.format(appName),
+                '[program:{1}]'.format(appName),
                 'command={1}'.format(config.command),
                 'autostart={1}'.format((config.autostart)?'true':'false'),
                 'autorestart={1}'.format((config.autorestart)?'true':'false'),
@@ -63,10 +63,15 @@ module.exports = (function() {
               deferred.resolve();
             });
           }).then(function(lines) {
+            var appStarts = [];
+            Object.keys(config).forEach(function(appName) {
+              appStarts.push('supervisorctl start {1}'.format(appName));
+            });
             fer.command([
+              '/etc/init.d/supervisor start',
               'supervisorctl reread',
-              'supervisorctl update'
-            ], true).then(function() {
+              'supervisorctl update',
+            ].concat(appStarts), false).then(function() {
               var ms = (new Date()).getTime() - start;
               fer.log(0, 'beforeDone-supervisord> Completed in {1}ms'.format(ms), 0);
               deferred.resolve();

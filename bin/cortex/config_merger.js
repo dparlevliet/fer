@@ -45,8 +45,15 @@ module.exports = function(fer) {
                     // objects they are first.
 
                     if (left_value.forEach && right_value.forEach) {
+                      var uValues = [];
+                      var nConfig = left_value.concat(right_value);
+                      nConfig.forEach(function(value) {
+                        if (uValues.indexOf(value) === -1) {
+                          uValues.push(value);
+                        }
+                      });
                       // both sides are standard arrays, we can just concat them
-                      config_left[key] = left_value.concat(right_value);
+                      config_left[key] = uValues;
                       try_resolve();
                     } else {
                       // Ooooh boy .. both sides are dictionaries. Ok, let's
