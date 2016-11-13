@@ -194,10 +194,10 @@ function processDevice(device) {
               });
             }).then(function() {
               if (device.single_config) {
-                fer.config_merge_left(device.config, componentDevice.config).then(function(config) {
+                return fer.config_merge_left(device.config, componentDevice.config).then(function(config) {
                   device.config = config;
+                  deferred.resolve();
                 });
-                return deferred.resolve();
               }
 
               fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {

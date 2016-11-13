@@ -24,6 +24,7 @@ module.exports = (function() {
    */
 
   function Supervisord(config, callback) {
+    console.log('here');
     if (!fer.$$supervisord) {
       fer.$$supervisord = {};
       fer.on('beforeDone', function() {
@@ -81,10 +82,10 @@ module.exports = (function() {
 
   return {
     help: function() {
-      return fer.fs.readFileSync(__dirname + '/../help/watch.txt').toString();
+      return fer.fs.readFileSync(__dirname + '/../help/supervisor.txt').toString();
     },
     run_at: function() {
-      return fer.base_run_at + 2;
+      return fer.base_run_at + 4;
     },
     cls: Supervisord
   };
