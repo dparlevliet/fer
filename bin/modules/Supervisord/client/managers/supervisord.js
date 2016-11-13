@@ -24,7 +24,6 @@ module.exports = (function() {
    */
 
   function Supervisord(config, callback) {
-    console.log('here');
     if (!fer.$$supervisord) {
       fer.$$supervisord = {};
       fer.on('beforeDone', function() {
