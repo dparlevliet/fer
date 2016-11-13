@@ -60,6 +60,7 @@ module.exports = (function() {
                 ((config.user)?'user={1}'.format(config.user):''),
                 ((config.environment)?'environment={1}'.format(environmentVariables.join(',')):''),
               ].join("\n")+"\n");
+              deferred.resolve();
             });
           }).then(function(lines) {
             fer.command([
@@ -70,6 +71,9 @@ module.exports = (function() {
               fer.log(0, 'beforeDone-supervisord> Completed in {1}ms'.format(ms), 0);
               deferred.resolve();
             });
+          }).fail(function(e) {
+            console.log(e);
+            deferred.resolve();
           });
         });
       });
