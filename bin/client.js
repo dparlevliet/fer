@@ -184,68 +184,89 @@ function processDevice(device) {
 
     // Parse the device config and any inherited components
     fer.do(function(deferred) {
-      if (device.inherit) {
-        // find and parse all inherited configs
-        device.inherit = device.inherit();
-        var length = device.inherit.length;
-        if (length == 0) {
-          return deferred.resolve();
-        }
+      if (!device.inherit) {
+        return deferred.resolve();
+      }
 
-        var runComponent = function(componentDevice) {
-          return fer.do(function(deferred) {
-            if (!componentDevice.inherit) {
-              componentDevice.inherit = [];
-            }
-            if (typeof(componentDevice.inherit) === 'function') {
-              componentDevice.inherit = componentDevice.inherit();
-            }
-            fer.reduce(componentDevice.inherit, function(component, offset, deferred) {
-              component.then(function(componentConfig) {
-                runComponent(componentConfig).then(function() {
-                  deferred.resolve();
-                }).fail(function(e) {
-                  console.log(e);
-                });
-              });
-            }).then(function() {
-              if (device.single_config) {
-                if (Object.keys(componentDevice.config).length == 0) {
-                  return deferred.resolve();
-                }
-                return fer.config_merge_left(device.config, componentDevice.config).then(function(config) {
-                  device.config = config;
-                  deferred.resolve();
-                });
-              }
+      // build the inherited list and ensure it's not empty
+      device.inherit = device.inherit();
+      var length = device.inherit.length;
+      if (length == 0) {
+        return deferred.resolve();
+      }
 
-              fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
-                if (fer.modules[module_name]) {
-                  fer.value(componentDevice.config[module_name]).then(function(config) {
-                    queue.push({
-                      module_name: module_name,
-                      config: config
-                    });
-                    _deferred.resolve();
-                  });
-                } else {
-                  console.warn('!WARNING! Module for ' + module_name + ' not found.');
-                  _deferred.resolve();
-                }
-              }).then(function() {
-                deferred.resolve();
+      var runComponent = function(componentDevice, mergeObject) {
+        return fer.do(function(deferred) {
+          if (!componentDevice.inherit) {
+            componentDevice.inherit = [];
+          }
+          if (typeof(componentDevice.inherit) === 'function') {
+            componentDevice.inherit = componentDevice.inherit();
+          }
+          fer.reduce(componentDevice.inherit, function(component, offset, _deferred) {
+            component.then(function(componentConfig) {
+              runComponent(componentConfig, mergeObject).then(function(config) {
+                mergeObject = config;
+                _deferred.resolve();
+              }).fail(function(e) {
+                console.log(e);
+                _deferred.resolve();
               });
             });
+          }).then(function() {
+            if (device.single_config) {
+              return fer.config_merge_left(componentDevice.config, mergeObject).then(function(config) {
+                deferred.resolve(config);
+              }).fail(function(e) {
+                console.log(e);
+                deferred.resolve(mergeObject);
+              });
+            }
+
+            fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
+              if (fer.modules[module_name]) {
+                fer.value(componentDevice.config[module_name]).then(function(config) {
+                  queue.push({
+                    module_name: module_name,
+                    config: config
+                  });
+                  _deferred.resolve();
+                });
+              } else {
+                console.warn('!WARNING! Module for ' + module_name + ' not found.');
+                _deferred.resolve();
+              }
+            }).then(function() {
+              deferred.resolve(mergeObject);
+            });
+          }).fail(function(e) {
+            console.log(e);
+            deferred.resolve(mergeObject);
           });
-        };
-        runComponent(device).then(function() {
-          deferred.resolve();
-        }).fail(function(e) {
-          console.log(e);
         });
-      } else {
-        deferred.resolve();
-      }
+      };
+
+      // loop through the device inherited components and build a config for
+      // all of the components. Then, merge that final config in to the device
+      // config. This is to give priority to the device config and ensure
+      // its integrity.
+      var mergeConfig = {};
+      fer.reduce(device.inherit, function(component, offset, _deferred) {
+        component.then(function(componentConfig) {
+          runComponent(componentConfig, mergeConfig).then(function(config) {
+            mergeConfig = config;
+            _deferred.resolve();
+          }).fail(function(e) {
+            console.log(e);
+            _deferred.resolve();
+          });
+        });
+      }).then(function() {
+        fer.config_merge_left(device.config, mergeConfig).then(function(config) {
+          device.config = config;
+          deferred.resolve();
+        });
+      });
     }).then(function() {
       return fer.do(function(deferred) {
         if (fer.argv.viewConfig) {
