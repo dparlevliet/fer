@@ -95,7 +95,12 @@ fer.do(function(deferred) {
               });
             }
           } catch (e) {
-            install_file(file.path, file);
+            install_file(file.path, file).then(function() {
+              if (file.path.indexOf('package.json') > -1) {
+                newPackages = true;
+              }
+              deferred.resolve();
+            });
           }
         }
       } else {
@@ -120,6 +125,7 @@ fer.do(function(deferred) {
         console.log(data.toString().trim());
       });
       npm.on('exit', function(code){
+        log('Fer: Completed installing new npm packages.');
         deferred.resolve();
       });
     } else {
@@ -127,6 +133,10 @@ fer.do(function(deferred) {
     }
   });
 }).then(function() {
+  if (!fer.argv.skipSync) {
+    log('Fer: Sync complete.');
+  }
+
   var cp = require('child_process');
   var client;
   var server;
@@ -134,6 +144,26 @@ fer.do(function(deferred) {
   if (fer.argv.start) {
     log("Fer: OK. I'm starting now ...");
     client = cp.fork('./bin/client.js', process.argv.slice(2));
+
+    client.on('exit', function() {
+      var base = __dirname+'/usr/';
+      fer.FileUtils.walk(base).then(function(list) {
+        list.forEach(function(file) {
+          try {
+            file = base + file;
+            if (
+              fer.FileUtils.stat(file).isDirectory() ||
+              file.indexOf('.gitkeep') > -1
+            ) {
+              return true;
+            }
+            fer.fs.unlink(file);
+          } catch (e) {
+            console.log(e);
+          }
+        });
+      });
+    });
 
     process.on('SIGINT', function () {
       process.exit();

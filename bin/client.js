@@ -7,50 +7,57 @@ require('./cortex/js_extensions.js');
 require('./cortex/global_fer.js');
 fer.argv = require('yargs').argv;
 
-// this registers global.components
-require('./cortex/global_components.js');
 
 // Wait for Fer to tell you she's ready to begin
 fer.on('ready', function() {
-  // Work out which device this is and get the config
-  fer.FileUtils.walkSumList([
-    '{1}/../usr/devices/'.format(__dirname)
-  ]).then(function(devices) {
-    fer.reduce(devices[0], function(deviceFile, offset, deferred) {
-      if (deviceFile.path.indexOf('.gitkeep') > -1) {
-        return deferred.resolve(); // skip the .gitkeep file
-      }
-      var device = require(deviceFile.path);
-      fer.do(function(deferred) {
-        device.detect(fer.deviceInfo, deferred);
-      }).then(function(matches) {
-        if (matches) {
-          processDevice(device).then(function() {
-            deferred.resolve();
-          });
-        } else {
-          deferred.resolve();
-        }
-      });
-    }).then(function() {
-      var events = fer.getEvents('beforeDone');
-      var done = function() {
-        fer.log(0, "Fer: I'm done.");
-        fer.memory.save();
-      };
-      if (events) {
-        fer.reduce(events, function(event, offset, deferred) {
-          event().then(function() {
-            deferred.resolve();
+  // this registers global.components
+  try {
+    var components = require('./cortex/components.js');
+    (new components()).then(function(components) {
+      global.components = components;
+      // Work out which device this is and get the config
+      fer.FileUtils.walkSumList([
+        '{1}/../usr/devices/'.format(__dirname)
+      ]).then(function(devices) {
+        fer.reduce(devices[0], function(deviceFile, offset, deferred) {
+          if (deviceFile.path.indexOf('.gitkeep') > -1) {
+            return deferred.resolve(); // skip the .gitkeep file
+          }
+          var device = require(deviceFile.path);
+          fer.do(function(deferred) {
+            device.detect(fer.deviceInfo, deferred);
+          }).then(function(matches) {
+            if (matches) {
+              processDevice(device).then(function() {
+                deferred.resolve();
+              });
+            } else {
+              deferred.resolve();
+            }
           });
         }).then(function() {
-          done();
+          var events = fer.getEvents('beforeDone');
+          var done = function() {
+            fer.log(0, "Fer: I'm done.");
+            fer.memory.save();
+          };
+          if (events) {
+            fer.reduce(events, function(event, offset, deferred) {
+              event().then(function() {
+                deferred.resolve();
+              });
+            }).then(function() {
+              done();
+            });
+          } else {
+            done();
+          }
         });
-      } else {
-        done();
-      }
+      });
     });
-  });
+  } catch (e) {
+    console.log(e);
+  }
 });
 
 
@@ -179,6 +186,7 @@ function processDevice(device) {
     fer.do(function(deferred) {
       if (device.inherit) {
         // find and parse all inherited configs
+        device.inherit = device.inherit();
         var length = device.inherit.length;
         if (length == 0) {
           return deferred.resolve();
@@ -186,14 +194,25 @@ function processDevice(device) {
 
         var runComponent = function(componentDevice) {
           return fer.do(function(deferred) {
+            if (!componentDevice.inherit) {
+              componentDevice.inherit = [];
+            }
+            if (typeof(componentDevice.inherit) === 'function') {
+              componentDevice.inherit = componentDevice.inherit();
+            }
             fer.reduce(componentDevice.inherit, function(component, offset, deferred) {
               component.then(function(componentConfig) {
                 runComponent(componentConfig).then(function() {
                   deferred.resolve();
+                }).fail(function(e) {
+                  console.log(e);
                 });
               });
             }).then(function() {
               if (device.single_config) {
+                if (Object.keys(componentDevice.config).length == 0) {
+                  return deferred.resolve();
+                }
                 return fer.config_merge_left(device.config, componentDevice.config).then(function(config) {
                   device.config = config;
                   deferred.resolve();
@@ -221,6 +240,8 @@ function processDevice(device) {
         };
         runComponent(device).then(function() {
           deferred.resolve();
+        }).fail(function(e) {
+          console.log(e);
         });
       } else {
         deferred.resolve();
