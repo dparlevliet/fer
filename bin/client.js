@@ -281,10 +281,22 @@ function processDevice(device) {
 
         fer.reduce(Object.keys(device.config), function(module_name, offset, deferred) {
           if (fer.modules[module_name]) {
-            queue.push({
-              module_name: module_name,
-              config: device.config[module_name]
-            });
+            if (
+              typeof(device.config[module_name]) == 'object' &&
+              device.config[module_name].forEach
+            ) {
+              device.config[module_name].forEach(function(config, offset) {
+                queue.push({
+                  module_name: module_name,
+                  config: config
+                });
+              });
+            } else {
+              queue.push({
+                module_name: module_name,
+                config: device.config[module_name]
+              });
+            }
           } else {
             console.warn('!WARNING! Module for ' + module_name + ' not found.');
           }
