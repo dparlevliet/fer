@@ -50,7 +50,7 @@ var FileAttr = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/file_modify.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/file_attr.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 404;

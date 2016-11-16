@@ -59,6 +59,9 @@ Specifically, in this instance it will write the string "migrate to v0.0.1" to
 the location ``/root/fer/.migration`` and if that file didn't exist or existed
 with a different string, it will run the migrate command as user ``www-data``.
 
+Note: Using the ``modify`` param will not affect this process, and using ``modify``
+to modify a file or string will not cause ``command`` to be run.
+
 ```js
 module.exports = {
   detect: function() { ... },

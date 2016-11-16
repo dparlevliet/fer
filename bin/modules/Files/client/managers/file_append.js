@@ -81,7 +81,7 @@ var FileAppend = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/file_append.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/file_append.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 401;
