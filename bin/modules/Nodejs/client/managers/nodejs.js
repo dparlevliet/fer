@@ -43,7 +43,7 @@ var NodeJS = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/nodejs.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/nodejs.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 400;
