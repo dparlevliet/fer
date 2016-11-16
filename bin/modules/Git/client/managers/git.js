@@ -10,6 +10,11 @@ module.exports = (function() {
             'source': 'https://www.github.com/dparlevliet/fer.git',
             'branch': 'master',
             'run_as': 'www-data',
+            'command': function() {
+              return fer.do(function(deferred) {
+                return deferred.resolve();
+              });
+            }
           },
         },
       }
@@ -60,7 +65,7 @@ module.exports = (function() {
 
   return {
     help: function() {
-      return fer.fs.readFileSync(__dirname + '/../help/git.txt').toString();
+      return fer.fs.readFileSync(__dirname + '/../help/git.md').toString();
     },
     run_at: function() {
       return fer.base_run_at + 600;
