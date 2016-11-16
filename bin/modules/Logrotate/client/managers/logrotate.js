@@ -72,7 +72,7 @@ var Logrotate = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/logrotate.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/logrotate.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 50;
