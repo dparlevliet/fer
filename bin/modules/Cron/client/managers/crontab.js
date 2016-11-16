@@ -64,7 +64,7 @@ var Crontab = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/crontab.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/crontab.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 400;
