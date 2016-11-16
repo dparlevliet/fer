@@ -231,7 +231,7 @@ module.exports = (function() {
 
   return {
     help: function() {
-      return fer.fs.readFileSync(__dirname + '/../help/dir_install.txt').toString();
+      return fer.fs.readFileSync(__dirname + '/../help/dir_install.md').toString();
     },
     run_at: function() {
       return fer.base_run_at + 400;
