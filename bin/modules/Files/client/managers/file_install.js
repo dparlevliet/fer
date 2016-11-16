@@ -5,41 +5,32 @@ var FileInstaller = (function() {
   /**
    *
    * Example:
-      file_install: {
-        '/tmp/test.txt': {
-          group: 'root',
-          owner: 'root',
+       {
+        file_install: {
+          '/tmp/test.txt': {
+            group: 'root',
+            owner: 'root',
 
-          mode: '0740',
+            mode: '0740',
 
-          source: 'fer://test_file.txt',
-          text => 'Done.',
+            source: 'fer://test_file.txt', // from fer server or http location
+            text => 'Done.', // or raw text
 
-          modify => [
-            {
-              search: /<[^>]+>/g,
-              replace: '[\\1]'
-            }
-          ],
-
-          command: function() {
-            return fer.do(function(deferred) {
-              // do something here
-              deferred.resolve();
-            });
-          },
-        },
-        '/tmp/test_source.txt': {
-          source: 'fer://test_source.txt',
-          modify: function() {
-            return [
+            modify => [
               {
-                search: /test/g,
-                replace: 'NYPD'
+                search: /<[^>]+>/g,
+                replace: '[\\1]'
               }
-            ];
+            ],
+
+            command: function() {
+              return fer.do(function(deferred) { // must
+                // do something here
+                deferred.resolve();
+              });
+            },
           },
-        },
+        }
       }
    */
   function FileInstaller(config, callback) {
@@ -263,7 +254,7 @@ var FileInstaller = (function() {
 
 module.exports = {
   help: function() {
-    return fer.fs.readFileSync(__dirname + '/../help/file_install.txt').toString();
+    return fer.fs.readFileSync(__dirname + '/../help/file_install.md').toString();
   },
   run_at: function() {
     return fer.base_run_at + 400;
