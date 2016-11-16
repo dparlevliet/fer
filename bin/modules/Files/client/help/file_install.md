@@ -38,7 +38,7 @@ Install of a file located in the ``usr/files/`` path of your fer server
 
 ```js
 module.exports = {
-  detect: function() { ... }
+  detect: function() { ... },
   config: {
     file_install: {
       '/etc/mysql/my.cnf': {
@@ -61,7 +61,7 @@ with a different string, it will run the migrate command as user ``www-data``.
 
 ```js
 module.exports = {
-  detect: function() { ... }
+  detect: function() { ... },
   config: {
     file_install: {
       '/root/fer/.migration': {
@@ -75,6 +75,44 @@ module.exports = {
         }
       }
     }
+  }
+};
+```
+
+# Example #3
+
+Run ``file_install`` at different times in the cycle process.
+
+``!WARNING!`` It is strongly not advised to do this in any components - this
+should be done at the device level config ONLY if you're in ``single_config`` mode
+otherwise your config could be incorrectly built.
+
+```js
+module.exports = {
+  detect: function() { ... },
+  config: {
+    file_install: [
+      {
+        'run_at': 50,
+        '/etc/mysql/my.cnf': {
+          'source': 'fer://mysql/my.cnf',
+          'mode': '0440',
+        }
+      },
+      {
+        'run_at': 1000,
+        '/root/fer/.migration': {
+          'test': 'migrate to v0.0.1',
+          'mode': '0400',
+          'command': function() {
+            return fer.command([
+              'cd /var/www/<project>',
+              './migrate',
+            ], false, 'www-data');
+          }
+        }
+      }
+    ]
   }
 };
 ```
