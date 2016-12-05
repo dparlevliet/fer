@@ -33,21 +33,14 @@ module.exports = (function() {
           config = fer.$$supervisord;
           // install apps
           fer.reduce(Object.keys(config), function(appName, index, deferred) {
-            fer.value(config[appName]).then(function(config) {
+            fer.value(config[appName], ['command']).then(function(config) {
               var environmentVariables = [];
               if (config.environment) {
                 Object.keys(config.environment).forEach(function(key) {
                   environmentVariables.push('{1}={2}'.format(key, config.environment[key]));
                 });
               }
-              fer.fs.writeFileSync('/etc/supervisor/conf.d/{1}.conf'.format(appName), [
-                '###################################',
-                '# Installed by Fer                #',
-                '###################################',
-                '# !WARNING!                       #',
-                '# DO NOT MANUALLY EDIT THIS FILE! #',
-                '###################################',
-                '',
+              fer.fs.writeFileSync('/etc/supervisor/conf.d/{1}.conf'.format(appName), fer.managedFileWarning.concat([
                 '[program:{1}]'.format(appName),
                 'command={1}'.format(config.command),
                 'autostart={1}'.format((config.autostart)?'true':'false'),
@@ -58,7 +51,7 @@ module.exports = (function() {
                 'stopsignal={1}'.format((config.process_name)?config.stopsignal:'QUIT'),
                 ((config.user)?'user={1}'.format(config.user):''),
                 ((config.environment)?'environment={1}'.format(environmentVariables.join(',')):''),
-              ].join("\n")+"\n");
+              ]).join("\n")+"\n");
               deferred.resolve();
             });
           }).then(function(lines) {

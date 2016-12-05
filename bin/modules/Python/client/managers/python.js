@@ -18,24 +18,30 @@ var Python = (function() {
 
   function Python(config, callback) {
     fer.do(function(deferred) {
-      fer.value(config.pip).then(function(pip) {
-        if (!pip) {
-          return deferred.resolve();
-        }
-        fer.log(0, 'Installing pip modules', 1);
-        if (!fer.FileUtils.fileExists('/usr/bin/pip')) {
-          fer.log(0, '!WARNING! pip is not installed.', 2);
-          return deferred.resolve();
-        }
-        fer.command(
-          'yes y | pip install {1}'.format(pip.join(' ')),
-          false
-        ).then(function() {
-          deferred.resolve();
-        });
-      }).fail(function() {
+      fer.command('pip install --upgrade pip').then(function() {
         deferred.resolve();
-        console.log(arguments);
+      });
+    }).then(function() {
+      return fer.do(function(deferred) {
+        fer.value(config.pip).then(function(pip) {
+          if (!pip) {
+            return deferred.resolve();
+          }
+          fer.log(0, 'Installing pip modules', 1);
+          if (!fer.FileUtils.fileExists('/usr/bin/pip')) {
+            fer.log(0, '!WARNING! pip is not installed.', 2);
+            return deferred.resolve();
+          }
+          fer.command(
+            'yes y | pip install {1}'.format(pip.join(' ')),
+            false
+          ).then(function() {
+            deferred.resolve();
+          });
+        }).fail(function() {
+          deferred.resolve();
+          console.log(arguments);
+        });
       });
     }).then(function() {
       return fer.do(function(deferred) {

@@ -1,4 +1,4 @@
-
+require('./js_extensions.js');
 global.fer = (function() {
   function Fer() {
     var parent = this;
@@ -19,6 +19,33 @@ global.fer = (function() {
     parent.config           = require(parent.base_dir + 'bin/conf/client-config.js');
     parent.FileUtils        = require(parent.base_dir + 'bin/cortex/file_utils.js');
     parent.base_run_at      = 0;
+
+    parent.managedFileWarning = [
+      '###################################',
+      '# Managed by Fer                  #',
+      '###################################',
+      '# !WARNING!                       #',
+      '# DO NOT MANUALLY EDIT THIS FILE! #',
+      '###################################',
+      '',
+    ];
+    parent.writeWithFileWarning = function(fileName, lines) {
+      return parent.do(function(deferred) {
+        var cleanedEntries = [];
+        lines.forEach(function(line) {
+          if (parent.managedFileWarning.indexOf(line) > -1) {
+            cleanedEntries.push(line);
+          }
+        });
+        parent.fs.writeFileSync(
+          fileName,
+          parent.managedFileWarning.concat(
+            lines
+          ).join("\n")+"\n"
+        );
+        deferred.resolve();
+      });
+    };
 
     /***************************************************************************
      * Turn a function in to a promise function
@@ -333,6 +360,7 @@ global.fer = (function() {
               self[key] = require('{1}/../modules/{2}/client/managers/{3}'.format(__dirname, mName, name));
             });
           } catch(e) {
+            console.log(e);
             // this module doesn't have any client rules
             return true;
           }

@@ -32,15 +32,7 @@ module.exports = (function() {
             deferred.resolve();
           }).then(function() {
             return fer.do(function(deferred) {
-              var newLines = [
-                '###################################',
-                '# Installed by Fer                #',
-                '###################################',
-                '# !WARNING!                       #',
-                '# DO NOT MANUALLY EDIT THIS FILE! #',
-                '###################################',
-                '',
-              ];
+              var newLines = [];
               fer.FileUtils.readlines('/etc/hosts').then(function(lines) {
                 lines.forEach(function(line) {
                   if (line.substr(0, 1) === '#') {
@@ -51,7 +43,8 @@ module.exports = (function() {
                   var lineHosts = line.split(' ');
                   var lineIp = lineHosts.splice(0, 1)[0];
                   if (typeof(config[lineIp]) !== 'undefined') {
-                    // we're going to build this later so we don't need it now
+                    // we're going to build this in the next ``then()`` so we
+                    // don't need it now
                     return true;
                   }
                   // confirm all hosts should belong to this lineIp
@@ -74,8 +67,9 @@ module.exports = (function() {
                 }
                 deferred.resolve();
               }).then(function() {
-                fer.fs.writeFileSync('/etc/hosts', lines.join("\n")+"\n");
-                deferred.resolve();
+                fer.writeWithFileWarning('/etc/hosts', lines).then(function() {
+                  deferred.resolve();
+                });
               });
             });
           }).then(function() {

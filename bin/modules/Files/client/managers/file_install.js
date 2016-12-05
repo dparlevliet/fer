@@ -89,7 +89,7 @@ var FileInstaller = (function() {
             });
           });
         }).then(function() {
-          fer.command(file.command).then(function(result) {
+          fer.runModuleCommand(file.command).then(function(result) {
             deferred.resolve(result);
           });
         });
@@ -213,8 +213,11 @@ var FileInstaller = (function() {
                   var url = '/get-file/?file='+file;
                   fer.server(url, true).then(function(response) {
                     fer.fs.writeFileSync(install.destination, response.body);
-                    deferred.resolve();
-                  }).catch(function() {
+                    self.postInstallUpdates(install).then(function() {
+                      deferred.resolve();
+                    });
+                  }).catch(function(e) {
+                    console.log(e);
                     deferred.resolve();
                   });
                 } else {

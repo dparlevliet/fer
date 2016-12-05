@@ -34,6 +34,9 @@ fer.on('ready', function() {
             } else {
               deferred.resolve();
             }
+          }).fail(function(e) {
+            console.log(e);
+            deferred.resolve();
           });
         }).then(function() {
           var events = fer.getEvents('beforeDone');
@@ -42,16 +45,24 @@ fer.on('ready', function() {
             fer.memory.save();
           };
           if (events) {
-            fer.reduce(events, function(event, offset, deferred) {
+            fer.reduce(events.reverse(), function(event, offset, deferred) {
               event().then(function() {
+                deferred.resolve();
+              }).fail(function(e) {
+                console.log(e);
                 deferred.resolve();
               });
             }).then(function() {
+              done();
+            }).fail(function(e) {
+              console.log(e);
               done();
             });
           } else {
             done();
           }
+        }).fail(function(e) {
+          console.log(e);
         });
       });
     });
@@ -105,16 +116,19 @@ function processDevice(device) {
           var config = item.config;
           fer.do(function(deferred) {
             if (config.forEach) {
-              config.forEach(function(x_config, x_offset) {
+              fer.reduce(config, function(x_config, x_offset, _deferred) {
                 fer.value(x_config.run_at).then(function(position) {
+                  if (!position) {
+                    position = 100000;
+                  }
                   var n_item = Object.assign({}, item);
                   n_item.config = x_config;
                   n_item.position = Number(position);
                   insertIntoFinalQueue(n_item);
-                  if (x_offset == config.length - 1) {
-                    deferred.resolve();
-                  }
+                  _deferred.resolve();
                 });
+              }).then(function() {
+                deferred.resolve();
               });
             } else {
               deferred.resolve();
@@ -179,98 +193,100 @@ function processDevice(device) {
         });
       }).then(function() {
         deferred.resolve();
+      }).fail(function(e) {
+        console.log(e);
       });
     };
 
     // Parse the device config and any inherited components
     fer.do(function(deferred) {
-      if (!device.inherit) {
-        return deferred.resolve();
-      }
-
-      // build the inherited list and ensure it's not empty
-      device.inherit = device.inherit();
-      var length = device.inherit.length;
-      if (length == 0) {
-        return deferred.resolve();
-      }
-
-      var runComponent = function(componentDevice, mergeObject) {
-        return fer.do(function(deferred) {
-          if (!componentDevice.inherit) {
-            componentDevice.inherit = [];
-          }
-          if (typeof(componentDevice.inherit) === 'function') {
-            componentDevice.inherit = componentDevice.inherit();
-          }
-          fer.reduce(componentDevice.inherit, function(component, offset, _deferred) {
-            component.then(function(componentConfig) {
-              runComponent(componentConfig, mergeObject).then(function(config) {
-                mergeObject = config;
-                _deferred.resolve();
-              }).fail(function(e) {
-                console.log(e);
-                _deferred.resolve();
-              });
-            });
-          }).then(function() {
-            if (device.single_config) {
-              return fer.config_merge_left(componentDevice.config, mergeObject).then(function(config) {
-                deferred.resolve(config);
-              }).fail(function(e) {
-                console.log(e);
-                deferred.resolve(mergeObject);
-              });
+      if (device.inherit) {
+        // find and parse all inherited configs
+        var runComponent = function(componentDevice) {
+          return fer.do(function(deferred) {
+            if (!componentDevice.inherit) {
+              componentDevice.inherit = function() { return []; };
             }
-
-            fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
-              if (fer.modules[module_name]) {
+            if (typeof(componentDevice.inherit) === 'function') {
+              componentDevice.inherit = componentDevice.inherit();
+            }
+            if (!componentDevice.inherit) {
+              componentDevice.inherit = [];
+            }
+            fer.reduce(componentDevice.inherit, function(component, offset, deferred) {
+              component.then(function(componentConfig) {
+                runComponent(componentConfig).then(function() {
+                  deferred.resolve();
+                }).fail(function(e) {
+                  console.log(e);
+                });
+              });
+            }).then(function() {
+              fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
+                if (!fer.modules[module_name]) {
+                  console.warn('!WARNING! Module for ' + module_name + ' not found.');
+                  return _deferred.resolve();
+                }
                 fer.value(componentDevice.config[module_name]).then(function(config) {
-                  queue.push({
-                    module_name: module_name,
-                    config: config
-                  });
+                  if (config && !config.run_at) {
+                    // inject the default run_at because the user didn't
+                    // explicitly define a run_at period. This is necessary to
+                    // properly generate a well merged single-config and
+                    // also to give the user a clear picture of the run times
+                    // when they use ``--view-config``.
+                    if (typeof(fer.modules[module_name].run_at) === 'function') {
+                      config.run_at = fer.modules[module_name].run_at();
+                    } else {
+                      config.run_at = fer.modules[module_name].run_at;
+                    }
+                  }
+                  componentDevice.config[module_name] = config;
+
+                  if (device.single_config === false) {
+                    // the user has opted to not use single config so just
+                    // queue the module because we wont be merging it later.
+                    queue.push({
+                      module_name: module_name,
+                      config: config
+                    });
+                  }
                   _deferred.resolve();
                 });
-              } else {
-                console.warn('!WARNING! Module for ' + module_name + ' not found.');
-                _deferred.resolve();
-              }
-            }).then(function() {
-              deferred.resolve(mergeObject);
+              }).then(function() {
+                if (device.single_config === false) {
+                  // if the user opted to not use single-config then there's
+                  // no need to merge anything, just move along.
+                  deferred.resolve();
+                } else {
+                  // merge the device config in to the component config. Uses
+                  // merge_right because the base device config takes priority
+                  // over any component configs so we want to ensure that.
+                  return fer.config_merge_right(
+                    device.config,
+                    componentDevice.config
+                  ).then(function(config) {
+                    device.config = config;
+                    deferred.resolve();
+                  });
+                }
+              });
             });
-          }).fail(function(e) {
-            console.log(e);
-            deferred.resolve(mergeObject);
           });
-        });
-      };
-
-      // loop through the device inherited components and build a config for
-      // all of the components. Then, merge that final config in to the device
-      // config. This is to give priority to the device config and ensure
-      // its integrity.
-      var mergeConfig = {};
-      fer.reduce(device.inherit, function(component, offset, _deferred) {
-        component.then(function(componentConfig) {
-          runComponent(componentConfig, mergeConfig).then(function(config) {
-            mergeConfig = config;
-            _deferred.resolve();
-          }).fail(function(e) {
-            console.log(e);
-            _deferred.resolve();
-          });
-        });
-      }).then(function() {
-        fer.config_merge_left(device.config, mergeConfig).then(function(config) {
-          device.config = config;
+        };
+        runComponent(device).then(function() {
           deferred.resolve();
+        }).fail(function(e) {
+          console.log(e);
         });
-      });
+      } else {
+        deferred.resolve();
+      }
     }).then(function() {
       return fer.do(function(deferred) {
         if (fer.argv.viewConfig) {
           console.log(JSON.stringify(device.config, null, 2));
+          //var util = require('util');
+          //console.log(util.inspect(device.config, { showHidden: true, depth: null }));
           return deferred.resolve(true);
         }
 

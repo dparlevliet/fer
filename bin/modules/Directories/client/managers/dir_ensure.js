@@ -24,7 +24,7 @@ module.exports = (function() {
   function DirEnsure(config, callback) {
     fer.value(config).then(function(config) {
       if (typeof(config) !== 'object') {
-        fer.log(0, 'Fer: !WARNING! I need a dictionary list for dir_install. I cannot continue with this struct');
+        fer.log(0, 'Fer: !WARNING! I need a dictionary list for file_ensure. I cannot continue with this struct');
         return callback();
       }
 

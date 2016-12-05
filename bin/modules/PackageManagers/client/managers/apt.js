@@ -24,7 +24,6 @@ var Apt = (function() {
   */
 
   function Apt(config, callback) {
-    var lines               = 0;
     var existing_packages   = [];
     var new_packages        = [];
 
@@ -32,35 +31,87 @@ var Apt = (function() {
       if (!config) {
         return callback();
       }
+
       // find installed packages
-      return fer.command('dpkg -l', true);
-    }).then(function(response) {
       return fer.do(function(deferred) {
-        // process installed packages
-        lines = response.contents.split(fer.os.EOL);
-
-        // find existing INSTALLED packages
-        lines.forEach(function(line) {
-          var parts = line.split(/\s+/);
-
-          // Note: ii means installed
-          if (parts.length >= 6 && parts[0] === 'ii') {
-            existing_packages.push(parts[1]);
-          }
-        });
-
-        // find any new packages
-        if (config.packages) {
-          config.packages.forEach(function(pkg) {
-            if (existing_packages.indexOf(pkg) == -1) {
-              new_packages.push(pkg);
-            }
+        // Crudely parse ``/var/lib/dpkg/status`` so that we can support
+        // virtual packages. This should prevent Fer from constantly trying to
+        // install a package that're actually already installed but listed in
+        // ``dpkg -l`` as a new or slightly different name.
+        //
+        // eg. ``php5.6-cli`` might be changed to ``php5-cli`` depending on the
+        // provider - apt will handle this automatically and now Fer should too.
+        try {
+          fer.FileUtils.readlines('/var/lib/dpkg/status').then(function(lines) {
+            var installedPackages = {};
+            var lastPackage = '';
+            var lastPackageInstalled = false;
+            lines.forEach(function(line, offset) {
+              var parts;
+              if (line.indexOf('Package') > -1) {
+                parts = line.split(' ');
+                lastPackage = parts[1].trim();
+                lastPackageInstalled = false;
+              }
+              if (line.indexOf('Status: install ok installed') > -1) {
+                lastPackageInstalled = true;
+                installedPackages[lastPackage] = true;
+              }
+              if (line.indexOf('Provides:') > -1 && lastPackageInstalled) {
+                parts = line.split(':');
+                var packages = parts[1].split(', ');
+                packages.forEach(function(pkg) {
+                  installedPackages[pkg.trim()] = true;
+                });
+              }
+            });
+            fer.reduce(config.packages, function(packageName, offset, _deferred) {
+              if (typeof(installedPackages[packageName]) !== 'undefined') {
+                existing_packages.push(packageName);
+              } else {
+                new_packages.push(packageName);
+              }
+              _deferred.resolve();
+            }).then(function() {
+              deferred.resolve();
+            });
           });
+        } catch (e) {
+          console.log(e);
+          deferred.resolve();
         }
-
-        deferred.resolve();
       });
     }).then(function() {
+      // update packages list
+      return fer.do(function(deferred) {
+        fer.value(config.ppa).then(function(value) {
+          var memoryKey = 'fer::modules::PackageManagers::apt::ppa';
+          var lastInstall = fer.memory.get(memoryKey) || [];
+          if (
+            typeof(value) === 'object' && value.forEach && value.length > 0
+          ) {
+            var changed = false;
+            fer.reduce(value, function(ppa, offset, _deferred) {
+              if (lastInstall.indexOf(ppa) === -1) {
+                changed = true;
+                fer.command(
+                  'DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:{1}'.format(ppa)
+                ).then(function() {
+                  _deferred.resolve();
+                });
+              } else {
+                _deferred.resolve();
+              }
+            }).then(function() {
+              fer.memory.set(memoryKey, value);
+              deferred.resolve(changed);
+            });
+          } else {
+            deferred.resolve();
+          }
+        });
+      });
+    }).then(function(forceInstall) {
       // update packages list
       return fer.do(function(deferred) {
         fer.value(config.always_update).then(function(value) {
@@ -68,7 +119,7 @@ var Apt = (function() {
           var lastUpdate = fer.memory.get(memoryKey);
           var now = (new Date()).getTime();
           if (
-            (new_packages.length > 0 || value == true) ||
+            (new_packages.length > 0 || value == true) || forceInstall ||
             (!lastUpdate || (now - Number(lastUpdate)) > (60*60*24*1000))
           ) {
             fer.memory.set(memoryKey, now);
@@ -95,7 +146,7 @@ var Apt = (function() {
                   "apt-get {1} {2} {3} {4} {5} {6} {7}".format(
                     "-q",
                     "-o StopOnError=false",
-                    "-o DPkg::Options=\"--force-confold\"",
+                    "-o Dpkg::Options=\"--force-confold\"",
                     "--force-yes -y",
                     "--allow-unauthenticated",
                     "install",
@@ -139,7 +190,7 @@ var Apt = (function() {
               " apt-get {1} {2} {3} {4} {5}".format(
                 "upgrade",
                 "-oStopOnError=false",
-                "-oDPkg::Options=\"--force-confold\"",
+                "-oDpkg::Options=\"--force-confold\"",
                 "--force-yes -y",
                 "--allow-unauthenticated"
               )
@@ -191,6 +242,8 @@ var Apt = (function() {
       });
     }).then(function() {
       callback();
+    }).fail(function(e) {
+      console.log(e);
     });
   } // Apt
 

@@ -8,7 +8,7 @@ var Component = function(component) {
 
   parent.name =  component.name;
   parent.inherit = component.inherit || [];
-  parent.config = component.config || {};
+  parent.config = Object.assign({}, component.config) || {};
 
   function Component(config) {
     return fer.do(function(deferred) {

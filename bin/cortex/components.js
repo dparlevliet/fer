@@ -10,16 +10,17 @@ module.exports = (function() {
           if (path.indexOf('.js') > -1) {
             try {
               var component = require(components_dir+path);
-              var prefix = fer.path.dirname(path).replace('/', '_');
+              var prefix = fer.path.dirname(path).replace(/\//g, '_');
               if (prefix.length > 0) {
                 prefix = prefix + '_';
               }
-              var name = prefix + component.name;
               if (component && component.forEach) { // component is actually a list - unusual, but not unreasonable
                 component.forEach(function(component) {
+                  var name = prefix + component.name;
                   components[name] = new Component(component);
                 });
               } else {
+                var name = prefix + component.name;
                 components[name] = new Component(component);
               }
             } catch (e) {

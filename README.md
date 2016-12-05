@@ -1,4 +1,10 @@
 
+## Quick install
+
+### Ubuntu
+```sh
+curl -sL https://raw.githubusercontent.com/dparlevliet/fer/master/install/ubuntu.sh | sudo -E bash -
+```
 
 ## Testing with Docker
 
@@ -23,8 +29,9 @@ chmod 600 insecure_key
 # build the image
 docker build -t fer .
 
-# start the box
+# start the server
 docker run -d -p 127.0.0.1:33333:3333 -v ~/src/docker/pax-fer/supervisor:/etc/supervisor/conf.d -v ~/src/docker/pax-fer/fer:/root/fer $(docker images | grep ^pax-fer | awk '{print $3}') /sbin/my_init --enable-insecure-key
+
 
 # find the running container id
 docker ps

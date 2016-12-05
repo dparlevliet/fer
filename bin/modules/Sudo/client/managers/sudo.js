@@ -29,6 +29,8 @@ module.exports = (function() {
       fer.on('beforeDone', function() {
         return fer.do(function(deferred) {
           config = fer.$$sudo;
+          var start = (new Date()).getTime();
+          fer.log(0, 'beforeDone-sudo> Starting', 0);
           fer.value(config.config).then(function(configLines) {
             if (!configLines) {
               configLines = [];
@@ -49,8 +51,6 @@ module.exports = (function() {
                     '###################################',
                     '',
                   ].concat(configLines).join("\n")+"\n");
-                  var start = (new Date()).getTime();
-                  fer.log(0, 'beforeDone-sudo> Starting', 0);
                   fer.command('visudo -c', false).then(function(response) {
                     if (response.code != 0) {
                       fer.log(0, '!WARNING! visudo reported an error in the sudoers config! Reverting back to previous version', 2);
@@ -71,7 +71,7 @@ module.exports = (function() {
       });
     }
     fer.config_merge_left(fer.$$sudo, config).then(function(config) {
-      fer.$$crontab = config;
+      fer.$$sudo = config;
       callback();
     });
   } // Sudo
