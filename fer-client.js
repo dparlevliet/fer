@@ -120,7 +120,7 @@ fer.do(function(deferred) {
     if (newPackages) {
       log('Fer: Installing new npm packages');
       var cp = require('child_process');
-      var npm = cp.spawn('/usr/bin/npm', ['--prefix', __dirname, 'install', __dirname ]);
+      var npm = cp.spawn('/usr/bin/npm', ['--prefix', __dirname, '--unsafe-perm', 'install', __dirname ]);
       npm.stdout.on('data', function(data) {
         console.log(data.toString().trim());
       });

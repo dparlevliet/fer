@@ -6,4 +6,4 @@ DEBIAN_FRONTEND=noninteractive apt-get install -y --force-yes nodejs supervisor 
 cd /root
 git clone https://github.com/dparlevliet/fer.git
 cd /root/fer
-npm install
+npm install --unsafe-perm

@@ -1,4 +1,19 @@
 require('./js_extensions.js');
+
+// Create a document for jQuery to use.
+//
+// This is to fix errors caused by dependencies improperly using jQuery in
+// nodejs. Instead of having to submit patches for packages we do know this
+// issue exists in, and wait for the fix - this allows us to just side-step
+// the entire issue and get on with the job.
+//
+// http://stackoverflow.com/a/25516666/3047282
+global.jsdom = require("jsdom");
+var markup = '<html><body></body></html>';
+var doc = global.jsdom.jsdom(markup);
+global.window = doc.parentWindow;
+//
+
 global.fer = (function() {
   function Fer() {
     var parent = this;

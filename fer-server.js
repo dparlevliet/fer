@@ -12,7 +12,7 @@ global.config       = require('./bin/conf/server-config.js');
 /* global __basedir */
 global.__basedir    = __dirname;
 
-
+app.use('/dashboard', express.static('bin/dashboard'));
 /**
  * Returns information about the most current client on the master server. The
  * client server will call this url before doing anything, and if the version
