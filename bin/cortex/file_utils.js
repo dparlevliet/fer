@@ -10,9 +10,9 @@ module.exports = (function() {
   function FileUtils() {
     var parent = this;
 
-    this.fileExists = function(file) {
+    this.fileExists = function(file, notSymLink) {
       try {
-        if (parent.stat(file).isFile()) {
+        if (parent.stat(file).isFile() || (parent.stat(file).isSymbolicLink() && !notSymLink)) {
           return true;
         }
       } catch (e) {}
@@ -28,7 +28,7 @@ module.exports = (function() {
       } catch (e) {
         return false;
       }
-    }
+    };
 
     this.readlines = function(file) {
       return fer.do(function(deferred) {

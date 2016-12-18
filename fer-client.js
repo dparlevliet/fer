@@ -1,4 +1,5 @@
 global.__basedir = __dirname;
+process.chdir(__dirname);
 
 require('./bin/cortex/global_fer.js');
 /* global fer */
@@ -37,8 +38,9 @@ fer.do(function(deferred) {
 
     fer.reduce(lfiles, function(file, offset, deferred) {
       var install_file = function(fpath, file) {
-        return fer.do(function(deferred) {
+        return fer.time(function(deferred) {
           var rPath = file.path.replace(__dirname, '');
+          fer.log(5, 'Downloading {1}'.format(rPath), 1);
           var url = fer_server + '/get-file/?_t='+((new Date()).getTime())+'&nonRelative=true&file='+rPath;
           requestify.get(
             url
@@ -68,7 +70,8 @@ fer.do(function(deferred) {
           file.type == 'directory' ||
           file.path.indexOf('node_modules') > -1 ||
           file.path.indexOf('bin/conf') > -1 ||
-          file.path.indexOf('usr/files') > -1
+          file.path.indexOf('usr/files') > -1 ||
+          file.path.indexOf('.git/') > -1
         ) {
           deferred.resolve();
         } else {

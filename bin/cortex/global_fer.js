@@ -48,14 +48,14 @@ global.fer = (function() {
       return parent.do(function(deferred) {
         var cleanedEntries = [];
         lines.forEach(function(line) {
-          if (parent.managedFileWarning.indexOf(line) > -1) {
+          if (parent.managedFileWarning.indexOf(line) === -1) {
             cleanedEntries.push(line);
           }
         });
         parent.fs.writeFileSync(
           fileName,
           parent.managedFileWarning.concat(
-            lines
+            cleanedEntries
           ).join("\n")+"\n"
         );
         deferred.resolve();
@@ -535,28 +535,32 @@ global.fer = (function() {
         var lines = response.contents.split(parent.os.EOL);
 
         // parse the lsb-release information and cherry-pick useful information
-        lines.forEach(function(line) {
-          var parts = line.split(/=/);
-          if (parts.lenth != 2) {
-            return true;
-          }
+        try {
+          lines.forEach(function(line) {
+            var parts = line.split(/=/);
+            if (parts.lenth != 2) {
+              return true;
+            }
 
-          var key = parts[0];
-          var value = parts[1].replace(/['"]/, '');
+            var key = parts[0];
+            var value = parts[1].replace(/['"]/, '');
 
-          parent.platform = parent.os.platform();
-          if (key === 'DISTRIB_ID') {
-            parent.distribution = value.toLowerCase();
-          }
+            parent.platform = parent.os.platform();
+            if (key === 'DISTRIB_ID') {
+              parent.distribution = value.toLowerCase();
+            }
 
-          if (key === 'DISTRIB_RELEASE') {
-            parent.distribution_release = value.toLowerCase();
-          }
+            if (key === 'DISTRIB_RELEASE') {
+              parent.distribution_release = value.toLowerCase();
+            }
 
-          if (key === 'DISTRIB_CODENAME') {
-            parent.distribution_codename = value.toLowerCase();
-          }
-        });
+            if (key === 'DISTRIB_CODENAME') {
+              parent.distribution_codename = value.toLowerCase();
+            }
+          });
+        } catch (e) {
+          console.log(e);
+        }
 
         // broadcast that we're ready to begin now
         parent.trigger('ready');
@@ -635,6 +639,16 @@ global.fer = (function() {
 
     parent.sha256 = function(string) {
       return parent.hash(string, 'sha256');
+    };
+
+    parent.time = function(f) {
+      var start = (new Date()).getTime();
+      return parent.do(function(deferred) {
+        f(deferred);
+      }).then(function() {
+        var now = (new Date()).getTime();
+        parent.log(5, 'Took {1}ms'.format(now-start), parent.lastLogIndent+1);
+      });
     };
 
   }

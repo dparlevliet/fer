@@ -1,16 +1,21 @@
-
+process.chdir(__dirname+'/../');
 // inclusions
 require('./cortex/js_extensions.js');
 
 // this registers global.fer
 /* global fer */
 require('./cortex/global_fer.js');
-fer.argv = require('yargs').argv;
+var yargs = require('yargs')
+              .array('m')
+              .array('modules');
+fer.argv = yargs.argv;
+
 
 
 // Wait for Fer to tell you she's ready to begin
 fer.on('ready', function() {
   // this registers global.components
+  fer.log(5, 'Fer> Ready. Set. Go.');
   try {
     var components = require('./cortex/components.js');
     (new components()).then(function(components) {
@@ -19,15 +24,18 @@ fer.on('ready', function() {
       fer.FileUtils.walkSumList([
         '{1}/../usr/devices/'.format(__dirname)
       ]).then(function(devices) {
+        fer.log(5, 'Looking for this device config');
         fer.reduce(devices[0], function(deviceFile, offset, deferred) {
-          if (deviceFile.path.indexOf('.gitkeep') > -1) {
-            return deferred.resolve(); // skip the .gitkeep file
+          if (deviceFile.path.indexOf('.js') === -1) {
+            return deferred.resolve(); // skip any non-js file
           }
+          fer.log(5, 'Loading {1}'.format(deviceFile.path), 1);
           var device = require(deviceFile.path);
           fer.do(function(deferred) {
             device.detect(fer.deviceInfo, deferred);
           }).then(function(matches) {
             if (matches) {
+              fer.log(5, 'Found device at {1}'.format(deviceFile.path), 2);
               processDevice(device).then(function() {
                 deferred.resolve();
               });
@@ -162,12 +170,23 @@ function processDevice(device) {
             // if this is the last item we will process, then we need to resolve and
             // move on
             deferred.resolve();
+          }).fail(function(e) {
+            console.log(e);
           });
+        }).fail(function(e) {
+          console.log(e);
         });
       }).then(function() {
         return fer.reduce(final_queue, function(item, offset, deferred) {
           if (!item) {
             return deferred.resolve();
+          }
+
+          if (fer.argv.modules || fer.argv.m) {
+            var limited = fer.argv.modules || fer.argv.m;
+            if (limited.indexOf(item.module_name) === -1) {
+              return deferred.resolve();
+            }
           }
 
           var start = (new Date()).getTime();
@@ -190,6 +209,8 @@ function processDevice(device) {
             fer.log(0, '{1}-{2}> Completed in {3}ms'.format(item.position, item.module_name, (now-start)));
             deferred.resolve();
           }
+        }).fail(function(e) {
+          console.log(e);
         });
       }).then(function() {
         deferred.resolve();
@@ -220,6 +241,8 @@ function processDevice(device) {
                 }).fail(function(e) {
                   console.log(e);
                 });
+              }).fail(function(e) {
+                console.log(e);
               });
             }).then(function() {
               fer.reduce(Object.keys(componentDevice.config), function(module_name, offset, _deferred) {
@@ -269,8 +292,14 @@ function processDevice(device) {
                     deferred.resolve();
                   });
                 }
+              }).fail(function(e) {
+                console.log(e);
               });
+            }).fail(function(e) {
+              console.log(e);
             });
+          }).fail(function(e) {
+            console.log(e);
           });
         };
         runComponent(device).then(function() {
